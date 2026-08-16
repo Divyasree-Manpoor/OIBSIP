@@ -1,1233 +1,3 @@
-Pasted markdown.md
-File
-check this entire task we needed to complete it 
- why it is coming like this 
-Pasted code.css
-File
-the TODO is done<!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
-    <meta
-        name="description"
-        content="A responsive task management application."
-    >
-
-    <title>Task Manager</title>
-
-    <link rel="stylesheet" href="style.css">
-</head>
-
-<body>
-
-    <main class="app">
-
-        <!-- Header -->
-
-        <header class="app-header">
-
-            <div>
-                <p class="eyebrow">TASK MANAGEMENT</p>
-
-                <h1>My Tasks</h1>
-
-                <p class="subtitle">
-                    Organize your day, one task at a time.
-                </p>
-            </div>
-
-        </header>
-
-
-        <!-- Add Task -->
-
-        <section class="task-input-section">
-
-            <form id="taskForm" class="task-form">
-
-                <label
-                    for="taskInput"
-                    class="sr-only"
-                >
-                    Enter a task
-                </label>
-
-                <input
-                    type="text"
-                    id="taskInput"
-                    placeholder="What needs to be done?"
-                    autocomplete="off"
-                    maxlength="150"
-                >
-
-                <button
-                    type="submit"
-                    class="add-button"
-                >
-                    Add Task
-                </button>
-
-            </form>
-
-        </section>
-
-
-        <!-- Task Summary -->
-
-        <section class="task-summary">
-
-            <div class="summary-item">
-
-                <span class="summary-label">
-                    Total
-                </span>
-
-                <strong id="totalCount">
-                    0
-                </strong>
-
-            </div>
-
-
-            <div class="summary-item">
-
-                <span class="summary-label">
-                    Pending
-                </span>
-
-                <strong id="pendingCount">
-                    0
-                </strong>
-
-            </div>
-
-
-            <div class="summary-item">
-
-                <span class="summary-label">
-                    Completed
-                </span>
-
-                <strong id="completedCount">
-                    0
-                </strong>
-
-            </div>
-
-        </section>
-
-
-        <!-- Task Controls -->
-
-        <section class="task-controls">
-
-            <div
-                class="filter-buttons"
-                role="group"
-                aria-label="Task filters"
-            >
-
-                <button
-                    type="button"
-                    class="filter-button active"
-                    data-filter="all"
-                >
-                    All
-                </button>
-
-                <button
-                    type="button"
-                    class="filter-button"
-                    data-filter="pending"
-                >
-                    Pending
-                </button>
-
-                <button
-                    type="button"
-                    class="filter-button"
-                    data-filter="completed"
-                >
-                    Completed
-                </button>
-
-            </div>
-
-        </section>
-
-
-        <!-- Task List -->
-
-        <section class="tasks-section">
-
-            <div
-                id="emptyState"
-                class="empty-state"
-            >
-
-                <div class="empty-icon">
-                    ✓
-                </div>
-
-                <h2>No tasks yet</h2>
-
-                <p>
-                    Add your first task to get started.
-                </p>
-
-            </div>
-
-
-            <ul
-                id="taskList"
-                class="task-list"
-                aria-live="polite"
-            >
-            </ul>
-
-        </section>
-
-
-        <!-- Footer -->
-
-        <footer class="app-footer">
-
-            <p>
-                Your tasks are saved automatically in this browser.
-            </p>
-
-        </footer>
-
-    </main>
-
-
-    <script src="script.js"></script>
-
-</body>
-
-</html>/* =========================================
-   DOM ELEMENTS
-========================================= */
-
-const taskForm = document.getElementById("taskForm");
-const taskInput = document.getElementById("taskInput");
-const taskList = document.getElementById("taskList");
-const emptyState = document.getElementById("emptyState");
-
-const totalCount = document.getElementById("totalCount");
-const pendingCount = document.getElementById("pendingCount");
-const completedCount = document.getElementById("completedCount");
-
-const filterButtons = document.querySelectorAll(".filter-button");
-
-
-/* =========================================
-   APPLICATION STATE
-========================================= */
-
-let tasks = loadTasks();
-let currentFilter = "all";
-
-
-/* =========================================
-   LOCAL STORAGE
-========================================= */
-
-function loadTasks() {
-    try {
-        const savedTasks = localStorage.getItem("taskManagerTasks");
-
-        return savedTasks ? JSON.parse(savedTasks) : [];
-    } catch (error) {
-        console.error("Unable to load tasks:", error);
-
-        return [];
-    }
-}
-
-
-function saveTasks() {
-    localStorage.setItem(
-        "taskManagerTasks",
-        JSON.stringify(tasks)
-    );
-}
-
-
-/* =========================================
-   ADD TASK
-========================================= */
-
-taskForm.addEventListener("submit", function (event) {
-
-    event.preventDefault();
-
-    const taskText = taskInput.value.trim();
-
-    if (!taskText) {
-        taskInput.focus();
-        return;
-    }
-
-    const newTask = {
-        id: Date.now(),
-        text: taskText,
-        completed: false
-    };
-
-    tasks.unshift(newTask);
-
-    saveTasks();
-
-    taskInput.value = "";
-
-    taskInput.focus();
-
-    renderTasks();
-});
-
-
-/* =========================================
-   FILTER TASKS
-========================================= */
-
-filterButtons.forEach(function (button) {
-
-    button.addEventListener("click", function () {
-
-        currentFilter = button.dataset.filter;
-
-        filterButtons.forEach(function (item) {
-            item.classList.remove("active");
-        });
-
-        button.classList.add("active");
-
-        renderTasks();
-    });
-});
-
-
-/* =========================================
-   GET FILTERED TASKS
-========================================= */
-
-function getFilteredTasks() {
-
-    if (currentFilter === "pending") {
-        return tasks.filter(function (task) {
-            return !task.completed;
-        });
-    }
-
-    if (currentFilter === "completed") {
-        return tasks.filter(function (task) {
-            return task.completed;
-        });
-    }
-
-    return tasks;
-}
-
-
-/* =========================================
-   RENDER TASKS
-========================================= */
-
-function renderTasks() {
-
-    const filteredTasks = getFilteredTasks();
-
-    taskList.innerHTML = "";
-
-    updateCounters();
-
-    if (filteredTasks.length === 0) {
-
-        emptyState.style.display = "flex";
-
-        updateEmptyState();
-
-        return;
-    }
-
-    emptyState.style.display = "none";
-
-    filteredTasks.forEach(function (task) {
-
-        const taskElement = createTaskElement(task);
-
-        taskList.appendChild(taskElement);
-    });
-}
-
-
-/* =========================================
-   CREATE TASK ELEMENT
-========================================= */
-
-function createTaskElement(task) {
-
-    const li = document.createElement("li");
-
-    li.className = "task-item";
-
-    if (task.completed) {
-        li.classList.add("completed");
-    }
-
-
-    /* Checkbox */
-
-    const completeButton = document.createElement("button");
-
-    completeButton.type = "button";
-
-    completeButton.className = "complete-button";
-
-    completeButton.setAttribute(
-        "aria-label",
-        task.completed
-            ? "Mark task as pending"
-            : "Mark task as completed"
-    );
-
-    completeButton.textContent = task.completed ? "✓" : "";
-
-    completeButton.addEventListener("click", function () {
-
-        toggleTask(task.id);
-
-    });
-
-
-    /* Task Content */
-
-    const taskContent = document.createElement("div");
-
-    taskContent.className = "task-content";
-
-
-    const taskText = document.createElement("span");
-
-    taskText.className = "task-text";
-
-    taskText.textContent = task.text;
-
-
-    taskContent.appendChild(taskText);
-
-
-    /* Actions */
-
-    const actions = document.createElement("div");
-
-    actions.className = "task-actions";
-
-
-    /* Edit */
-
-    const editButton = document.createElement("button");
-
-    editButton.type = "button";
-
-    editButton.className = "task-action";
-
-    editButton.setAttribute(
-        "aria-label",
-        "Edit task"
-    );
-
-    editButton.textContent = "Edit";
-
-    editButton.addEventListener("click", function () {
-
-        startEditing(
-            li,
-            task,
-            taskContent
-        );
-
-    });
-
-
-    /* Delete */
-
-    const deleteButton = document.createElement("button");
-
-    deleteButton.type = "button";
-
-    deleteButton.className = "task-action delete";
-
-    deleteButton.setAttribute(
-        "aria-label",
-        "Delete task"
-    );
-
-    deleteButton.textContent = "Delete";
-
-    deleteButton.addEventListener("click", function () {
-
-        deleteTask(task.id);
-
-    });
-
-
-    actions.appendChild(editButton);
-
-    actions.appendChild(deleteButton);
-
-
-    li.appendChild(completeButton);
-
-    li.appendChild(taskContent);
-
-    li.appendChild(actions);
-
-
-    return li;
-}
-
-
-/* =========================================
-   TOGGLE TASK
-========================================= */
-
-function toggleTask(taskId) {
-
-    tasks = tasks.map(function (task) {
-
-        if (task.id === taskId) {
-
-            return {
-                ...task,
-                completed: !task.completed
-            };
-        }
-
-        return task;
-    });
-
-    saveTasks();
-
-    renderTasks();
-}
-
-
-/* =========================================
-   DELETE TASK
-========================================= */
-
-function deleteTask(taskId) {
-
-    tasks = tasks.filter(function (task) {
-        return task.id !== taskId;
-    });
-
-    saveTasks();
-
-    renderTasks();
-}
-
-
-/* =========================================
-   EDIT TASK
-========================================= */
-
-function startEditing(
-    listItem,
-    task,
-    taskContent
-) {
-
-    taskContent.innerHTML = "";
-
-
-    const editInput = document.createElement("input");
-
-    editInput.type = "text";
-
-    editInput.className = "edit-input";
-
-    editInput.value = task.text;
-
-    editInput.maxLength = 150;
-
-    taskContent.appendChild(editInput);
-
-    editInput.focus();
-
-    editInput.select();
-
-
-    function finishEditing() {
-
-        const updatedText = editInput.value.trim();
-
-        if (!updatedText) {
-            renderTasks();
-            return;
-        }
-
-        tasks = tasks.map(function (item) {
-
-            if (item.id === task.id) {
-
-                return {
-                    ...item,
-                    text: updatedText
-                };
-            }
-
-            return item;
-        });
-
-        saveTasks();
-
-        renderTasks();
-    }
-
-
-    editInput.addEventListener(
-        "keydown",
-        function (event) {
-
-            if (event.key === "Enter") {
-
-                event.preventDefault();
-
-                finishEditing();
-            }
-
-
-            if (event.key === "Escape") {
-
-                renderTasks();
-            }
-        }
-    );
-
-
-    editInput.addEventListener(
-        "blur",
-        finishEditing
-    );
-}
-
-
-/* =========================================
-   COUNTERS
-========================================= */
-
-function updateCounters() {
-
-    const total = tasks.length;
-
-    const completed = tasks.filter(
-        function (task) {
-            return task.completed;
-        }
-    ).length;
-
-    const pending = total - completed;
-
-
-    totalCount.textContent = total;
-
-    pendingCount.textContent = pending;
-
-    completedCount.textContent = completed;
-}
-
-
-/* =========================================
-   EMPTY STATE
-========================================= */
-
-function updateEmptyState() {
-
-    const title = emptyState.querySelector("h2");
-
-    const description = emptyState.querySelector("p");
-
-
-    if (currentFilter === "pending") {
-
-        title.textContent = "No pending tasks";
-
-        description.textContent =
-            "All your tasks are completed.";
-
-        return;
-    }
-
-
-    if (currentFilter === "completed") {
-
-        title.textContent = "No completed tasks";
-
-        description.textContent =
-            "Complete a task and it will appear here.";
-
-        return;
-    }
-
-
-    title.textContent = "No tasks yet";
-
-    description.textContent =
-        "Add your first task to get started.";
-}
-
-
-/* =========================================
-   INITIAL RENDER
-========================================= */
-
-renderTasks();
-Pasted markdown(2).md
-File
-
-Yes. I checked the full Oasis Infobyte task document you uploaded. The most important thing is: you do NOT have to complete every task in the entire 1,500-line document. The document contains multiple tracks, and you only need to complete the required amount for your assigned track.
-
-Since you are doing Full Stack/Web Development, your relevant section is Web Development & Designing.
-
-🎯 What YOU need to complete
-
-For Web Development & Designing, Oasis gives you 3 levels:
-
-LevelTasksRequired		
-Level 1	3 tasks	Complete all 3
-Level 2	4 tasks	Complete all 4
-Level 3	1 large full-stack project	Complete 1
-
-The rule is choose ONE level and finish every task in that level. You do not need to do Level 1 + Level 2 + Level 3.
-
-Level 1 — 3 tasks
-Landing Page
-HTML5 + CSS3
-Responsive design
-Navbar
-Hero section
-2+ content sections
-Footer
-Proper typography/layout
-Personal Portfolio
-HTML5 + CSS3
-Your name/role
-About Me
-Skills
-2+ projects
-Contact section
-Smooth navigation
-Responsive design
-Temperature Converter
-HTML + CSS + Vanilla JavaScript
-Celsius/Fahrenheit/Kelvin
-Input validation
-Conversion results
-Absolute-zero validation
-Clean UI
-Level 2 — 4 tasks
-Calculator
-Tribute Page
-To-Do Web App
-Login Authentication System
-
-These are more interactive and involve JavaScript. The calculator specifically requires event listeners and says not to use eval().
-
-Level 3 — 1 task
-
-Pizza Delivery Full-Stack Application
-
-This is a very large MERN project involving:
-
-React
-Node.js + Express
-MongoDB
-JWT authentication
-Email verification
-Forgot password
-Pizza customization
-Razorpay test payment
-User dashboard
-Admin dashboard
-Inventory management
-Automatic stock deduction
-Email alerts
-Order management
-Real-time order status
-
-Oasis itself warns that Level 3 requires solid React, Node.js, MongoDB and API knowledge and is not recommended unless you are comfortable with them.
-
-⭐ What I recommend for YOU
-
-Because your goal is Full Stack Developer and you're learning JavaScript/MERN, I would not choose Level 1 just because it's easier.
-
-I recommend:
-
-LEVEL 2
-
-You would build:
-
-Task 1 → Calculator
-↓
-Task 2 → Tribute Page
-↓
-Task 3 → To-Do Web App
-↓
-Task 4 → Login Authentication System
-
-This gives you much better JavaScript practice and is manageable compared with the Level 3 Pizza application.
-
-However, there is one consideration: Level 3 would be much stronger as a portfolio project, but it is a substantially bigger project and has many moving parts. We should only choose it if you can realistically complete and test all the requirements before September 15.
-
-⚠️ There are also requirements AFTER coding
-
-This is very important. Completing the projects alone isn't the whole internship.
-
-For EVERY task, Oasis requires this workflow:
-
-1. Review the task
-
-Understand the complete feature checklist before coding.
-
-2. Build it
-
-Follow the specified technology and requirements.
-
-3. Push it to GitHub
-
-Your repository must be named exactly:
-
-OIBSIP
-
-And the folders must follow:
-
-OIBSIP/[TrackName]-[Level/Task]-[ProjectName]/
-
-For example:
-
-OIBSIP/WebDev-L1-LandingPage/
-
-Each project folder needs your source code, README.md, and relevant screenshots/output files.
-
-4. Make a demo video
-
-The first 2 seconds must display:
-
-Your Full Name + Assigned Track + Task Title
-
-Then demonstrate the project working end-to-end.
-
-5. Post on LinkedIn
-
-Tag Oasis Infobyte and include:
-
-#oasisinfobyte
-
-plus relevant hashtags such as:
-
-#webdevelopment #internship
-
-6. Peer evaluation
-
-You must watch at least two other interns' demo videos and leave meaningful comments. A simple "Great work!" isn't enough. This is explicitly described as a graded requirement.
-
-7. Submit
-
-Submit through the official Task Submission Form and provide your OIBSIP GitHub repository link.
-
-8. Evaluation → Certificate
-
-After submission/evaluation, the document says successful completion results in a Completion Certificate and, where applicable, an Appreciation & Recommendation Letter.
-
-🟢 So our Oasis plan should be
-
-Oasis Infobyte — Web Development
-
-Level 2
-
-Task 1: Calculator
-Task 2: Tribute Page
-Task 3: To-Do Web App
-Task 4: Login Authentication System
-
-And for each one:
-
-Understand requirements → Build → Test → GitHub → README → Demo video → LinkedIn → Peer comments → Submission
-
-We should not copy tutorials or GitHub projects. We'll use tutorials/documentation only to understand concepts and then build your own implementation, because the Oasis instructions explicitly require the work to be your own.
-
-One thing before we start
-
-Don't create the projects yet.
-
-First, let's confirm your assigned track/level from your Oasis offer letter. If the offer letter says Web Development & Designing, then we can officially start with Level 2 → Task 1: Calculator and I'll guide you from creating the folder all the way through GitHub submission.
-
-If you upload the Oasis Offer Letter, I'll check it first so we follow exactly what was assigned to you.
-
-Step 7 — auth.js
-
-Now we implement the actual authentication system.
-
-Open:
-
-C:\OIBSIP\WebDev-L2-LoginAuthentication\auth.js
-
-Replace everything with:
-
-/* =========================================
-   STORAGE KEYS
-========================================= */
-
-
-const USERS_KEY = "loginAuthenticationUsers";
-const SESSION_KEY = "loginAuthenticationSession";
-
-
-
-
-/* =========================================
-   DOM ELEMENTS
-========================================= */
-
-
-const loginForm = document.getElementById("loginForm");
-const registerForm = document.getElementById("registerForm");
-
-
-const loginMessage = document.getElementById("loginMessage");
-const registerMessage = document.getElementById("registerMessage");
-
-
-const dashboardUser = document.getElementById("dashboardUser");
-const accountIdentifier = document.getElementById("accountIdentifier");
-const logoutButton = document.getElementById("logoutButton");
-
-
-
-
-/* =========================================
-   STORAGE HELPERS
-========================================= */
-
-
-function getUsers() {
-
-
-    try {
-
-
-        const savedUsers = localStorage.getItem(USERS_KEY);
-
-
-        return savedUsers
-            ? JSON.parse(savedUsers)
-            : [];
-
-
-    } catch (error) {
-
-
-What we have implemented
-
-Your Task 4 now has the complete authentication flow:
-
-REGISTER
-   ↓
-Validate fields
-   ↓
-Validate password
-   ↓
-Check duplicate account
-   ↓
-SHA-256 hash password
-   ↓
-Store account
-   ↓
-LOGIN
-   ↓
-Find account
-   ↓
-Hash entered password
-   ↓
-Compare hashes
-   ↓
-Create session
-   ↓
-DASHBOARD
-   ↓
-LOGOUT
-   ↓
-Clear session
-   ↓
-LOGIN
-
-This also implements the important requirements from the task document: password validation, duplicate-account handling, generic login errors, protected dashboard access, logout, and avoiding plain-text password storage.
-
-Current project
-WebDev-L2-LoginAuthentication/
-│
-├── index.html        ✅
-├── register.html     ✅
-├── dashboard.html    ✅
-├── style.css         ✅
-├── auth.js           ✅
-└── README.md         ⬜
-
-Don't create the README yet. First we need to test the authentication system carefully.
-
-Test 1 — Registration
-
-Open:
-
-register.html
-
-Create an account such as:
-
-Username: divyasree
-Password: Test1234
-Confirm:  Test1234
-
-It should create the account and redirect you to the login page.
-
-Then tell me what happens, and we'll test login → protected dashboard → logout next.
-
-next
-Step 8 — Test Task 4 completely
-
-The code is written. Now don't change anything yet. We need to verify that every required authentication flow works.
-
-Test 1 — Create an account
-
-Open:
-
-WebDev-L2-LoginAuthentication/register.html
-
-Enter:
-
-Username or Email: divyasree
-Password: Test1234
-Confirm Password: Test1234
-
-Click Create Account.
-
-Expected result
-
-You should see:
-
-Account created successfully. Redirecting to login...
-
-Then it should automatically open:
-
-index.html
-Test 2 — Try duplicate registration
-
-Go back to:
-
-register.html
-
-Enter the same username again:
-
-divyasree
-
-with a valid password.
-
-Expected:
-
-An account with this username or email already exists.
-
-✅ This confirms duplicate-account detection.
-
-Test 3 — Invalid password
-
-Try:
-
-Password: password
-
-Expected:
-
-Password must contain at least 8 characters and 1 number.
-
-Then test:
-
-Password: Test123
-
-This is only 7 characters, so it should also be rejected.
-
-Test 4 — Password mismatch
-
-Use:
-
-Password: Test1234
-Confirm Password: Test1235
-
-Expected:
-
-Passwords do not match.
-
-Test 5 — Login
-
-Go to:
-
-index.html
-
-Enter:
-
-Username or Email: divyasree
-Password: Test1234
-
-Click Sign In.
-
-Expected:
-
-dashboard.html
-
-and you should see:
-
-Welcome, divyasree
-
-with:
-
-Account: divyasree
-Session: Active
-Test 6 — Wrong password
-
-Log out first.
-
-Then try:
-
-Username: divyasree
-Password: Wrong123
-
-Expected:
-
-Incorrect username/email or password.
-
-Notice that it doesn't reveal whether the username exists.
-
-Test 7 — Protected dashboard
-
-This is very important.
-
-First click Logout.
-
-Then manually open:
-
-dashboard.html
-
-Expected:
-
-dashboard.html
-       ↓
-No active session
-       ↓
-index.html
-
-You should automatically be redirected to the login page.
-
-Test 8 — Logout
-
-Login again.
-
-On the dashboard click:
-
-Logout
-
-Expected:
-
-Dashboard
-   ↓
-Logout
-   ↓
-Session removed
-   ↓
-Login page
-
-Then try opening dashboard.html again.
-
-It should again redirect to login.
-
-Final Task 4 checklist
-Requirement	Test
-Registration	⬜
-Password ≥ 8 characters	⬜
-Password contains number	⬜
-Duplicate account detection	⬜
-Password confirmation	⬜
-Login	⬜
-Wrong credentials error	⬜
-Protected dashboard	⬜
-Logout	⬜
-Session persistence	⬜
-Password hashing	✅ Implemented
-Responsive UI	✅ Implemented
-One important note
-
-This is a frontend-only educational authentication implementation using localStorage and SHA-256, which is the Approach A allowed in your Oasis task. It should not be presented as production-grade authentication because real applications should handle credentials and sessions server-side.
-
-Do the tests above now. If everything passes, the next step is README.md + final project cleanup + connecting Task 4 to your root OIBSIP/index.html.
-
-Pasted code.html
-File
-update this and give me 
-
-Yes. I updated your root index.html based on the file you provided.
-
-Changes made
-✅ Task 1 — Calculator: Completed + project link
-✅ Task 2 — Tribute Page: Completed + project link
-✅ Task 3 — To-Do App: Changed from In Development → Completed
-✅ Task 3 now has View Project → link
-✅ Task 4 — Login Authentication: Changed from In Development → Completed
-✅ Task 4 now has View Project → link
-✅ Task 4 technologies updated to:
-HTML5
-CSS3
-JavaScript
-SHA-256
-Local Storage
-✅ Featured Projects description updated
-Download the updated root file
-
-Download updated index.html
-
-Replace your existing:
-
-C:\OIBSIP\index.html
-
-with this file.
-
-Your final root structure should now be:
-
-OIBSIP/
-│
-├── index.html
-│
-├── WebDev-L2-Calculator/
-│
-├── WebDev-L2-TributePage/
-│
-├── WebDev-L2-ToDoApp/
-│
-└── WebDev-L2-LoginAuthentication/
-
-Important: Before GitHub submission, we should test every View Project → link from the root page to make sure all four open correctly. 
-
-OIBSIP-index-updated.html
-HTML
-
-Library
-/
-OIBSIP-index-updated.html
 <!DOCTYPE html>
 <html lang="en">
 
@@ -1241,12 +11,15 @@ OIBSIP-index-updated.html
 
     <meta
         name="description"
-        content="Divyasree Manpoor — Web Development Project Portfolio"
+        content="Divyasree Manpoor — Web Development Projects"
     >
+
+    <meta name="theme-color" content="#0f172a">
 
     <title>Divyasree Manpoor | Web Development Projects</title>
 
     <style>
+
         /* =========================================
            RESET
         ========================================= */
@@ -1271,7 +44,7 @@ OIBSIP-index-updated.html
                 Arial,
                 sans-serif;
 
-            color: #172033;
+            color: #0f172a;
             background: #f8fafc;
 
             line-height: 1.6;
@@ -1280,6 +53,10 @@ OIBSIP-index-updated.html
         a {
             color: inherit;
             text-decoration: none;
+        }
+
+        button {
+            font: inherit;
         }
 
 
@@ -1303,8 +80,11 @@ OIBSIP-index-updated.html
             --success: #15803d;
             --success-bg: #dcfce7;
 
-            --progress: #92400e;
-            --progress-bg: #fef3c7;
+            --shadow-sm:
+                0 4px 12px rgba(15, 23, 42, 0.05);
+
+            --shadow-md:
+                0 15px 35px rgba(15, 23, 42, 0.08);
         }
 
 
@@ -1317,15 +97,15 @@ OIBSIP-index-updated.html
             top: 0;
             z-index: 1000;
 
-            border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+            border-bottom: 1px solid rgba(226, 232, 240, 0.85);
 
-            background: rgba(255, 255, 255, 0.94);
+            background: rgba(255, 255, 255, 0.88);
 
-            backdrop-filter: blur(14px);
+            backdrop-filter: blur(18px);
         }
 
         .nav-container {
-            width: min(1120px, calc(100% - 40px));
+            width: min(1160px, calc(100% - 40px));
 
             min-height: 72px;
 
@@ -1334,27 +114,49 @@ OIBSIP-index-updated.html
             display: flex;
             align-items: center;
             justify-content: space-between;
+
+            gap: 30px;
         }
 
         .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+
             color: var(--heading);
 
             font-size: 15px;
-            font-weight: 700;
+            font-weight: 800;
 
             letter-spacing: 0.5px;
+        }
+
+        .brand-mark {
+            width: 34px;
+            height: 34px;
+
+            display: grid;
+            place-items: center;
+
+            border-radius: 9px;
+
+            background: var(--primary);
+            color: white;
+
+            font-size: 14px;
+            font-weight: 800;
         }
 
         .nav-links {
             display: flex;
             align-items: center;
 
-            gap: 30px;
+            gap: 28px;
 
             color: var(--muted);
 
             font-size: 14px;
-            font-weight: 500;
+            font-weight: 600;
         }
 
         .nav-links a {
@@ -1366,23 +168,26 @@ OIBSIP-index-updated.html
         }
 
         .github-link {
-            padding: 8px 14px;
+            padding: 9px 15px;
 
             border: 1px solid var(--border);
-            border-radius: 7px;
+            border-radius: 8px;
 
-            background: #ffffff;
+            background: white;
 
             color: var(--heading);
 
             transition:
                 border-color 0.2s ease,
-                color 0.2s ease;
+                color 0.2s ease,
+                transform 0.2s ease;
         }
 
         .github-link:hover {
             border-color: var(--primary);
             color: var(--primary);
+
+            transform: translateY(-1px);
         }
 
 
@@ -1391,25 +196,42 @@ OIBSIP-index-updated.html
         ========================================= */
 
         .hero {
+            position: relative;
+
+            overflow: hidden;
+
             border-bottom: 1px solid var(--border);
 
-            background: #ffffff;
+            background:
+                radial-gradient(
+                    circle at 85% 20%,
+                    rgba(37, 99, 235, 0.12),
+                    transparent 28%
+                ),
+                radial-gradient(
+                    circle at 10% 80%,
+                    rgba(59, 130, 246, 0.08),
+                    transparent 25%
+                ),
+                #ffffff;
         }
 
         .hero-container {
-            width: min(1120px, calc(100% - 40px));
+            width: min(1160px, calc(100% - 40px));
 
             margin: auto;
 
-            padding: 120px 0 115px;
+            padding: 115px 0 105px;
         }
 
         .hero-content {
-            max-width: 820px;
+            max-width: 850px;
         }
 
         .hero-label {
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
 
             margin-bottom: 22px;
 
@@ -1419,7 +241,17 @@ OIBSIP-index-updated.html
             font-weight: 800;
 
             letter-spacing: 2px;
+
             text-transform: uppercase;
+        }
+
+        .hero-label::before {
+            content: "";
+
+            width: 28px;
+            height: 2px;
+
+            background: var(--primary);
         }
 
         .hero h1 {
@@ -1427,11 +259,11 @@ OIBSIP-index-updated.html
 
             color: var(--heading);
 
-            font-size: clamp(44px, 7vw, 72px);
+            font-size: clamp(44px, 7vw, 74px);
 
-            line-height: 1.05;
+            line-height: 1.02;
 
-            letter-spacing: -3px;
+            letter-spacing: -3.5px;
         }
 
         .hero h1 span {
@@ -1439,7 +271,7 @@ OIBSIP-index-updated.html
         }
 
         .hero-description {
-            max-width: 700px;
+            max-width: 720px;
 
             margin-bottom: 34px;
 
@@ -1463,42 +295,52 @@ OIBSIP-index-updated.html
             align-items: center;
             justify-content: center;
 
-            min-height: 46px;
+            min-height: 48px;
 
-            padding: 0 20px;
+            padding: 0 21px;
 
-            border-radius: 8px;
+            border-radius: 9px;
 
             font-size: 14px;
-            font-weight: 600;
+            font-weight: 700;
 
             transition:
                 background 0.2s ease,
                 color 0.2s ease,
                 border-color 0.2s ease,
-                transform 0.2s ease;
+                transform 0.2s ease,
+                box-shadow 0.2s ease;
         }
 
         .button-primary {
             background: var(--primary);
-            color: #ffffff;
+
+            color: white;
+
+            box-shadow:
+                0 8px 20px rgba(37, 99, 235, 0.18);
         }
 
         .button-primary:hover {
             background: var(--primary-dark);
+
             transform: translateY(-2px);
+
+            box-shadow:
+                0 12px 24px rgba(37, 99, 235, 0.25);
         }
 
         .button-secondary {
             border: 1px solid var(--border);
 
-            background: #ffffff;
+            background: white;
 
             color: var(--heading);
         }
 
         .button-secondary:hover {
             border-color: #94a3b8;
+
             transform: translateY(-2px);
         }
 
@@ -1508,7 +350,7 @@ OIBSIP-index-updated.html
         ========================================= */
 
         .projects-section {
-            width: min(1120px, calc(100% - 40px));
+            width: min(1160px, calc(100% - 40px));
 
             margin: auto;
 
@@ -1528,23 +370,24 @@ OIBSIP-index-updated.html
             font-weight: 800;
 
             letter-spacing: 2px;
+
             text-transform: uppercase;
         }
 
         .section-header h2 {
-            margin-bottom: 10px;
+            margin-bottom: 12px;
 
             color: var(--heading);
 
-            font-size: clamp(30px, 4vw, 42px);
+            font-size: clamp(32px, 4vw, 44px);
 
-            line-height: 1.2;
+            line-height: 1.15;
 
-            letter-spacing: -1.2px;
+            letter-spacing: -1.5px;
         }
 
         .section-description {
-            max-width: 650px;
+            max-width: 680px;
 
             color: var(--muted);
 
@@ -1562,7 +405,7 @@ OIBSIP-index-updated.html
             grid-template-columns:
                 repeat(2, minmax(0, 1fr));
 
-            gap: 22px;
+            gap: 24px;
         }
 
 
@@ -1571,17 +414,24 @@ OIBSIP-index-updated.html
         ========================================= */
 
         .project-card {
+            position: relative;
+
             display: flex;
             flex-direction: column;
 
-            min-height: 365px;
+            min-height: 390px;
 
             padding: 30px;
 
+            overflow: hidden;
+
             border: 1px solid var(--border);
-            border-radius: 14px;
+
+            border-radius: 16px;
 
             background: var(--surface);
+
+            box-shadow: var(--shadow-sm);
 
             transition:
                 transform 0.25s ease,
@@ -1589,14 +439,42 @@ OIBSIP-index-updated.html
                 border-color 0.25s ease;
         }
 
+        .project-card::before {
+            content: "";
+
+            position: absolute;
+
+            top: 0;
+            left: 0;
+
+            width: 100%;
+            height: 3px;
+
+            background: var(--primary);
+
+            transform: scaleX(0);
+
+            transform-origin: left;
+
+            transition: transform 0.3s ease;
+        }
+
         .project-card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-6px);
 
             border-color: #cbd5e1;
 
-            box-shadow:
-                0 18px 40px rgba(15, 23, 42, 0.08);
+            box-shadow: var(--shadow-md);
         }
+
+        .project-card:hover::before {
+            transform: scaleX(1);
+        }
+
+
+        /* =========================================
+           PROJECT TOP
+        ========================================= */
 
         .project-top {
             display: flex;
@@ -1604,7 +482,7 @@ OIBSIP-index-updated.html
             align-items: center;
             justify-content: space-between;
 
-            margin-bottom: 25px;
+            margin-bottom: 27px;
         }
 
         .project-number {
@@ -1617,7 +495,7 @@ OIBSIP-index-updated.html
         }
 
         .project-status {
-            padding: 5px 9px;
+            padding: 6px 10px;
 
             border-radius: 999px;
 
@@ -1631,20 +509,21 @@ OIBSIP-index-updated.html
 
         .completed {
             background: var(--success-bg);
+
             color: var(--success);
         }
 
-        .in-progress {
-            background: var(--progress-bg);
-            color: var(--progress);
-        }
+
+        /* =========================================
+           PROJECT CONTENT
+        ========================================= */
 
         .project-card h3 {
             margin-bottom: 12px;
 
             color: var(--heading);
 
-            font-size: 24px;
+            font-size: 23px;
 
             letter-spacing: -0.5px;
         }
@@ -1656,7 +535,7 @@ OIBSIP-index-updated.html
 
             font-size: 14px;
 
-            line-height: 1.75;
+            line-height: 1.8;
         }
 
 
@@ -1668,23 +547,24 @@ OIBSIP-index-updated.html
             display: flex;
             flex-wrap: wrap;
 
-            gap: 7px;
+            gap: 8px;
 
             margin-bottom: 28px;
         }
 
         .technology {
-            padding: 5px 9px;
+            padding: 6px 10px;
 
             border: 1px solid var(--border);
-            border-radius: 6px;
+
+            border-radius: 7px;
 
             background: #f8fafc;
 
             color: #475569;
 
             font-size: 11px;
-            font-weight: 600;
+            font-weight: 700;
         }
 
 
@@ -1704,39 +584,40 @@ OIBSIP-index-updated.html
         }
 
         .project-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+
             color: var(--primary);
 
             font-size: 14px;
-            font-weight: 700;
+            font-weight: 800;
 
-            transition: color 0.2s ease;
+            transition:
+                color 0.2s ease,
+                gap 0.2s ease;
         }
 
         .project-link:hover {
             color: var(--primary-dark);
-        }
 
-        .coming-soon {
-            color: var(--muted);
-
-            font-size: 13px;
-            font-weight: 600;
+            gap: 10px;
         }
 
 
         /* =========================================
-           ABOUT SECTION
+           ABOUT
         ========================================= */
 
         .about-section {
             border-top: 1px solid var(--border);
             border-bottom: 1px solid var(--border);
 
-            background: #ffffff;
+            background: white;
         }
 
         .about-container {
-            width: min(1120px, calc(100% - 40px));
+            width: min(1160px, calc(100% - 40px));
 
             margin: auto;
 
@@ -1754,9 +635,9 @@ OIBSIP-index-updated.html
 
             color: var(--heading);
 
-            font-size: 30px;
+            font-size: 31px;
 
-            letter-spacing: -0.8px;
+            letter-spacing: -1px;
         }
 
         .about-content p {
@@ -1764,28 +645,40 @@ OIBSIP-index-updated.html
 
             font-size: 15px;
 
-            line-height: 1.8;
+            line-height: 1.9;
         }
 
         .principles {
             display: grid;
 
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns:
+                repeat(2, 1fr);
 
-            gap: 12px;
+            gap: 14px;
         }
 
         .principle {
-            padding: 20px;
+            padding: 22px;
 
             border: 1px solid var(--border);
-            border-radius: 10px;
+
+            border-radius: 11px;
 
             background: #f8fafc;
+
+            transition:
+                transform 0.2s ease,
+                border-color 0.2s ease;
+        }
+
+        .principle:hover {
+            transform: translateY(-3px);
+
+            border-color: #cbd5e1;
         }
 
         .principle h3 {
-            margin-bottom: 5px;
+            margin-bottom: 6px;
 
             color: var(--heading);
 
@@ -1797,7 +690,7 @@ OIBSIP-index-updated.html
 
             font-size: 12px;
 
-            line-height: 1.6;
+            line-height: 1.7;
         }
 
 
@@ -1807,17 +700,19 @@ OIBSIP-index-updated.html
 
         footer {
             background: #0f172a;
+
             color: #94a3b8;
         }
 
         .footer-container {
-            width: min(1120px, calc(100% - 40px));
+            width: min(1160px, calc(100% - 40px));
 
-            min-height: 85px;
+            min-height: 90px;
 
             margin: auto;
 
             display: flex;
+
             align-items: center;
             justify-content: space-between;
 
@@ -1825,10 +720,10 @@ OIBSIP-index-updated.html
         }
 
         .footer-name {
-            color: #ffffff;
+            color: white;
 
             font-size: 14px;
-            font-weight: 700;
+            font-weight: 800;
         }
 
         .footer-text {
@@ -1840,15 +735,7 @@ OIBSIP-index-updated.html
            RESPONSIVE
         ========================================= */
 
-        @media (max-width: 800px) {
-
-            .nav-links {
-                gap: 15px;
-            }
-
-            .hero-container {
-                padding: 90px 0;
-            }
+        @media (max-width: 850px) {
 
             .project-grid {
                 grid-template-columns: 1fr;
@@ -1859,6 +746,7 @@ OIBSIP-index-updated.html
 
                 gap: 45px;
             }
+
         }
 
 
@@ -1869,7 +757,7 @@ OIBSIP-index-updated.html
             .projects-section,
             .about-container,
             .footer-container {
-                width: min(100% - 30px, 1120px);
+                width: min(100% - 30px, 1160px);
             }
 
             .nav-container {
@@ -1880,8 +768,16 @@ OIBSIP-index-updated.html
                 font-size: 13px;
             }
 
+            .nav-links {
+                gap: 12px;
+            }
+
             .nav-links a:not(.github-link) {
                 display: none;
+            }
+
+            .github-link {
+                padding: 8px 12px;
             }
 
             .hero-container {
@@ -1925,8 +821,11 @@ OIBSIP-index-updated.html
 
                 flex-direction: column;
             }
+
         }
+
     </style>
+
 </head>
 
 
@@ -1941,9 +840,19 @@ OIBSIP-index-updated.html
 
         <div class="nav-container">
 
-            <a href="#" class="brand">
+            <a
+                href="#"
+                class="brand"
+            >
+
+                <span class="brand-mark">
+                    DM
+                </span>
+
                 DIVYASREE MANPOOR
+
             </a>
+
 
             <div class="nav-links">
 
@@ -1961,7 +870,7 @@ OIBSIP-index-updated.html
                     rel="noopener noreferrer"
                     class="github-link"
                 >
-                    GitHub
+                    GitHub ↗
                 </a>
 
             </div>
@@ -1985,16 +894,23 @@ OIBSIP-index-updated.html
                     WEB DEVELOPMENT
                 </div>
 
+
                 <h1>
-                    Building thoughtful
-                    <span>digital experiences.</span>
+                    Building
+                    <span>
+                        practical digital experiences.
+                    </span>
                 </h1>
 
+
                 <p class="hero-description">
-                    A collection of responsive web applications built
-                    with a focus on clean interfaces, practical
-                    functionality, and maintainable frontend development.
+
+                    A curated collection of responsive web applications
+                    focused on clean design, meaningful interaction,
+                    accessibility, and practical JavaScript development.
+
                 </p>
+
 
                 <div class="hero-actions">
 
@@ -2004,6 +920,7 @@ OIBSIP-index-updated.html
                     >
                         Explore Projects
                     </a>
+
 
                     <a
                         href="https://github.com/Divyasree-Manpoor/OIBSIP"
@@ -2040,13 +957,18 @@ OIBSIP-index-updated.html
                     SELECTED WORK
                 </div>
 
+
                 <h2>
                     Featured Projects
                 </h2>
 
+
                 <p class="section-description">
-                    Four practical web applications demonstrating responsive design,
-                    interactive functionality, and core JavaScript development.
+
+                    Four practical web applications demonstrating
+                    responsive design, interactive functionality,
+                    and core frontend development skills.
+
                 </p>
 
             </div>
@@ -2056,7 +978,7 @@ OIBSIP-index-updated.html
 
 
                 <!-- =================================
-                     PROJECT 01 — CALCULATOR
+                     PROJECT 01
                 ================================== -->
 
                 <article class="project-card">
@@ -2064,12 +986,10 @@ OIBSIP-index-updated.html
                     <div class="project-top">
 
                         <span class="project-number">
-                            01
+                            PROJECT 01
                         </span>
 
-                        <span
-                            class="project-status completed"
-                        >
+                        <span class="project-status completed">
                             Completed
                         </span>
 
@@ -2082,9 +1002,11 @@ OIBSIP-index-updated.html
 
 
                     <p class="project-description">
-                        A responsive calculator with arithmetic
+
+                        A responsive calculator implementing arithmetic
                         operations, decimal handling, operator chaining,
-                        keyboard support, and input validation.
+                        keyboard interaction, and input validation.
+
                     </p>
 
 
@@ -2123,8 +1045,9 @@ OIBSIP-index-updated.html
                 </article>
 
 
+
                 <!-- =================================
-                     PROJECT 02 — TRIBUTE
+                     PROJECT 02
                 ================================== -->
 
                 <article class="project-card">
@@ -2132,12 +1055,10 @@ OIBSIP-index-updated.html
                     <div class="project-top">
 
                         <span class="project-number">
-                            02
+                            PROJECT 02
                         </span>
 
-                        <span
-                            class="project-status completed"
-                        >
+                        <span class="project-status completed">
                             Completed
                         </span>
 
@@ -2150,10 +1071,12 @@ OIBSIP-index-updated.html
 
 
                     <p class="project-description">
+
                         A responsive editorial-style webpage presenting
                         the life, achievements, and lasting legacy of
                         Dr. A. P. J. Abdul Kalam through structured
-                        content and visual design.
+                        content and thoughtful visual design.
+
                     </p>
 
 
@@ -2192,8 +1115,9 @@ OIBSIP-index-updated.html
                 </article>
 
 
+
                 <!-- =================================
-                     PROJECT 03 — TODO
+                     PROJECT 03
                 ================================== -->
 
                 <article class="project-card">
@@ -2201,12 +1125,10 @@ OIBSIP-index-updated.html
                     <div class="project-top">
 
                         <span class="project-number">
-                            03
+                            PROJECT 03
                         </span>
 
-                        <span
-                            class="project-status completed"
-                        >
+                        <span class="project-status completed">
                             Completed
                         </span>
 
@@ -2219,9 +1141,12 @@ OIBSIP-index-updated.html
 
 
                     <p class="project-description">
-                        An interactive application for creating,
-                        organizing, editing, completing, and managing
-                        everyday tasks.
+
+                        An interactive task management application for
+                        creating, editing, completing, filtering,
+                        and deleting everyday tasks with automatic
+                        browser storage.
+
                     </p>
 
 
@@ -2260,8 +1185,9 @@ OIBSIP-index-updated.html
                 </article>
 
 
+
                 <!-- =================================
-                     PROJECT 04 — AUTHENTICATION
+                     PROJECT 04
                 ================================== -->
 
                 <article class="project-card">
@@ -2269,12 +1195,10 @@ OIBSIP-index-updated.html
                     <div class="project-top">
 
                         <span class="project-number">
-                            04
+                            PROJECT 04
                         </span>
 
-                        <span
-                            class="project-status completed"
-                        >
+                        <span class="project-status completed">
                             Completed
                         </span>
 
@@ -2287,9 +1211,12 @@ OIBSIP-index-updated.html
 
 
                     <p class="project-description">
-                        A web application demonstrating user
-                        registration, login validation, protected
-                        access, and authentication workflows.
+
+                        A frontend authentication demonstration featuring
+                        account registration, password validation,
+                        secure password hashing, login verification,
+                        protected dashboard access, and logout.
+
                     </p>
 
 
@@ -2337,6 +1264,7 @@ OIBSIP-index-updated.html
         </section>
 
 
+
         <!-- =========================================
              ABOUT
         ========================================== -->
@@ -2355,11 +1283,14 @@ OIBSIP-index-updated.html
                         Development Approach
                     </h2>
 
+
                     <p>
+
                         These projects represent hands-on development
-                        work focused on strengthening core web technologies
-                        and translating requirements into functional,
-                        responsive user experiences.
+                        focused on transforming requirements into
+                        functional, responsive, and user-friendly
+                        web experiences.
+
                     </p>
 
                 </div>
@@ -2375,8 +1306,8 @@ OIBSIP-index-updated.html
                         </h3>
 
                         <p>
-                            Designed for desktop, tablet, and mobile
-                            environments.
+                            Designed to provide a consistent experience
+                            across desktop, tablet, and mobile devices.
                         </p>
 
                     </div>
@@ -2389,8 +1320,8 @@ OIBSIP-index-updated.html
                         </h3>
 
                         <p>
-                            Focused on meaningful interaction rather
-                            than static layouts.
+                            Focused on useful interactions rather than
+                            static visual layouts.
                         </p>
 
                     </div>
@@ -2403,8 +1334,8 @@ OIBSIP-index-updated.html
                         </h3>
 
                         <p>
-                            Organized with clear and maintainable
-                            project structure.
+                            Organized using clear and maintainable
+                            project structures.
                         </p>
 
                     </div>
@@ -2413,12 +1344,12 @@ OIBSIP-index-updated.html
                     <div class="principle">
 
                         <h3>
-                            Continuous
+                            Tested
                         </h3>
 
                         <p>
-                            Built, tested, refined, and documented
-                            throughout development.
+                            Built and refined through functional testing
+                            and iterative improvements.
                         </p>
 
                     </div>
@@ -2433,6 +1364,7 @@ OIBSIP-index-updated.html
     </main>
 
 
+
     <!-- =========================================
          FOOTER
     ========================================== -->
@@ -2444,6 +1376,7 @@ OIBSIP-index-updated.html
             <div class="footer-name">
                 Divyasree Manpoor
             </div>
+
 
             <div class="footer-text">
                 Web Development · 2026
