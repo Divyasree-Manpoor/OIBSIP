@@ -1,0 +1,2459 @@
+Pasted markdown.md
+File
+check this entire task we needed to complete it 
+ why it is coming like this 
+Pasted code.css
+File
+the TODO is done<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta
+        name="description"
+        content="A responsive task management application."
+    >
+
+    <title>Task Manager</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <main class="app">
+
+        <!-- Header -->
+
+        <header class="app-header">
+
+            <div>
+                <p class="eyebrow">TASK MANAGEMENT</p>
+
+                <h1>My Tasks</h1>
+
+                <p class="subtitle">
+                    Organize your day, one task at a time.
+                </p>
+            </div>
+
+        </header>
+
+
+        <!-- Add Task -->
+
+        <section class="task-input-section">
+
+            <form id="taskForm" class="task-form">
+
+                <label
+                    for="taskInput"
+                    class="sr-only"
+                >
+                    Enter a task
+                </label>
+
+                <input
+                    type="text"
+                    id="taskInput"
+                    placeholder="What needs to be done?"
+                    autocomplete="off"
+                    maxlength="150"
+                >
+
+                <button
+                    type="submit"
+                    class="add-button"
+                >
+                    Add Task
+                </button>
+
+            </form>
+
+        </section>
+
+
+        <!-- Task Summary -->
+
+        <section class="task-summary">
+
+            <div class="summary-item">
+
+                <span class="summary-label">
+                    Total
+                </span>
+
+                <strong id="totalCount">
+                    0
+                </strong>
+
+            </div>
+
+
+            <div class="summary-item">
+
+                <span class="summary-label">
+                    Pending
+                </span>
+
+                <strong id="pendingCount">
+                    0
+                </strong>
+
+            </div>
+
+
+            <div class="summary-item">
+
+                <span class="summary-label">
+                    Completed
+                </span>
+
+                <strong id="completedCount">
+                    0
+                </strong>
+
+            </div>
+
+        </section>
+
+
+        <!-- Task Controls -->
+
+        <section class="task-controls">
+
+            <div
+                class="filter-buttons"
+                role="group"
+                aria-label="Task filters"
+            >
+
+                <button
+                    type="button"
+                    class="filter-button active"
+                    data-filter="all"
+                >
+                    All
+                </button>
+
+                <button
+                    type="button"
+                    class="filter-button"
+                    data-filter="pending"
+                >
+                    Pending
+                </button>
+
+                <button
+                    type="button"
+                    class="filter-button"
+                    data-filter="completed"
+                >
+                    Completed
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <!-- Task List -->
+
+        <section class="tasks-section">
+
+            <div
+                id="emptyState"
+                class="empty-state"
+            >
+
+                <div class="empty-icon">
+                    ✓
+                </div>
+
+                <h2>No tasks yet</h2>
+
+                <p>
+                    Add your first task to get started.
+                </p>
+
+            </div>
+
+
+            <ul
+                id="taskList"
+                class="task-list"
+                aria-live="polite"
+            >
+            </ul>
+
+        </section>
+
+
+        <!-- Footer -->
+
+        <footer class="app-footer">
+
+            <p>
+                Your tasks are saved automatically in this browser.
+            </p>
+
+        </footer>
+
+    </main>
+
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>/* =========================================
+   DOM ELEMENTS
+========================================= */
+
+const taskForm = document.getElementById("taskForm");
+const taskInput = document.getElementById("taskInput");
+const taskList = document.getElementById("taskList");
+const emptyState = document.getElementById("emptyState");
+
+const totalCount = document.getElementById("totalCount");
+const pendingCount = document.getElementById("pendingCount");
+const completedCount = document.getElementById("completedCount");
+
+const filterButtons = document.querySelectorAll(".filter-button");
+
+
+/* =========================================
+   APPLICATION STATE
+========================================= */
+
+let tasks = loadTasks();
+let currentFilter = "all";
+
+
+/* =========================================
+   LOCAL STORAGE
+========================================= */
+
+function loadTasks() {
+    try {
+        const savedTasks = localStorage.getItem("taskManagerTasks");
+
+        return savedTasks ? JSON.parse(savedTasks) : [];
+    } catch (error) {
+        console.error("Unable to load tasks:", error);
+
+        return [];
+    }
+}
+
+
+function saveTasks() {
+    localStorage.setItem(
+        "taskManagerTasks",
+        JSON.stringify(tasks)
+    );
+}
+
+
+/* =========================================
+   ADD TASK
+========================================= */
+
+taskForm.addEventListener("submit", function (event) {
+
+    event.preventDefault();
+
+    const taskText = taskInput.value.trim();
+
+    if (!taskText) {
+        taskInput.focus();
+        return;
+    }
+
+    const newTask = {
+        id: Date.now(),
+        text: taskText,
+        completed: false
+    };
+
+    tasks.unshift(newTask);
+
+    saveTasks();
+
+    taskInput.value = "";
+
+    taskInput.focus();
+
+    renderTasks();
+});
+
+
+/* =========================================
+   FILTER TASKS
+========================================= */
+
+filterButtons.forEach(function (button) {
+
+    button.addEventListener("click", function () {
+
+        currentFilter = button.dataset.filter;
+
+        filterButtons.forEach(function (item) {
+            item.classList.remove("active");
+        });
+
+        button.classList.add("active");
+
+        renderTasks();
+    });
+});
+
+
+/* =========================================
+   GET FILTERED TASKS
+========================================= */
+
+function getFilteredTasks() {
+
+    if (currentFilter === "pending") {
+        return tasks.filter(function (task) {
+            return !task.completed;
+        });
+    }
+
+    if (currentFilter === "completed") {
+        return tasks.filter(function (task) {
+            return task.completed;
+        });
+    }
+
+    return tasks;
+}
+
+
+/* =========================================
+   RENDER TASKS
+========================================= */
+
+function renderTasks() {
+
+    const filteredTasks = getFilteredTasks();
+
+    taskList.innerHTML = "";
+
+    updateCounters();
+
+    if (filteredTasks.length === 0) {
+
+        emptyState.style.display = "flex";
+
+        updateEmptyState();
+
+        return;
+    }
+
+    emptyState.style.display = "none";
+
+    filteredTasks.forEach(function (task) {
+
+        const taskElement = createTaskElement(task);
+
+        taskList.appendChild(taskElement);
+    });
+}
+
+
+/* =========================================
+   CREATE TASK ELEMENT
+========================================= */
+
+function createTaskElement(task) {
+
+    const li = document.createElement("li");
+
+    li.className = "task-item";
+
+    if (task.completed) {
+        li.classList.add("completed");
+    }
+
+
+    /* Checkbox */
+
+    const completeButton = document.createElement("button");
+
+    completeButton.type = "button";
+
+    completeButton.className = "complete-button";
+
+    completeButton.setAttribute(
+        "aria-label",
+        task.completed
+            ? "Mark task as pending"
+            : "Mark task as completed"
+    );
+
+    completeButton.textContent = task.completed ? "✓" : "";
+
+    completeButton.addEventListener("click", function () {
+
+        toggleTask(task.id);
+
+    });
+
+
+    /* Task Content */
+
+    const taskContent = document.createElement("div");
+
+    taskContent.className = "task-content";
+
+
+    const taskText = document.createElement("span");
+
+    taskText.className = "task-text";
+
+    taskText.textContent = task.text;
+
+
+    taskContent.appendChild(taskText);
+
+
+    /* Actions */
+
+    const actions = document.createElement("div");
+
+    actions.className = "task-actions";
+
+
+    /* Edit */
+
+    const editButton = document.createElement("button");
+
+    editButton.type = "button";
+
+    editButton.className = "task-action";
+
+    editButton.setAttribute(
+        "aria-label",
+        "Edit task"
+    );
+
+    editButton.textContent = "Edit";
+
+    editButton.addEventListener("click", function () {
+
+        startEditing(
+            li,
+            task,
+            taskContent
+        );
+
+    });
+
+
+    /* Delete */
+
+    const deleteButton = document.createElement("button");
+
+    deleteButton.type = "button";
+
+    deleteButton.className = "task-action delete";
+
+    deleteButton.setAttribute(
+        "aria-label",
+        "Delete task"
+    );
+
+    deleteButton.textContent = "Delete";
+
+    deleteButton.addEventListener("click", function () {
+
+        deleteTask(task.id);
+
+    });
+
+
+    actions.appendChild(editButton);
+
+    actions.appendChild(deleteButton);
+
+
+    li.appendChild(completeButton);
+
+    li.appendChild(taskContent);
+
+    li.appendChild(actions);
+
+
+    return li;
+}
+
+
+/* =========================================
+   TOGGLE TASK
+========================================= */
+
+function toggleTask(taskId) {
+
+    tasks = tasks.map(function (task) {
+
+        if (task.id === taskId) {
+
+            return {
+                ...task,
+                completed: !task.completed
+            };
+        }
+
+        return task;
+    });
+
+    saveTasks();
+
+    renderTasks();
+}
+
+
+/* =========================================
+   DELETE TASK
+========================================= */
+
+function deleteTask(taskId) {
+
+    tasks = tasks.filter(function (task) {
+        return task.id !== taskId;
+    });
+
+    saveTasks();
+
+    renderTasks();
+}
+
+
+/* =========================================
+   EDIT TASK
+========================================= */
+
+function startEditing(
+    listItem,
+    task,
+    taskContent
+) {
+
+    taskContent.innerHTML = "";
+
+
+    const editInput = document.createElement("input");
+
+    editInput.type = "text";
+
+    editInput.className = "edit-input";
+
+    editInput.value = task.text;
+
+    editInput.maxLength = 150;
+
+    taskContent.appendChild(editInput);
+
+    editInput.focus();
+
+    editInput.select();
+
+
+    function finishEditing() {
+
+        const updatedText = editInput.value.trim();
+
+        if (!updatedText) {
+            renderTasks();
+            return;
+        }
+
+        tasks = tasks.map(function (item) {
+
+            if (item.id === task.id) {
+
+                return {
+                    ...item,
+                    text: updatedText
+                };
+            }
+
+            return item;
+        });
+
+        saveTasks();
+
+        renderTasks();
+    }
+
+
+    editInput.addEventListener(
+        "keydown",
+        function (event) {
+
+            if (event.key === "Enter") {
+
+                event.preventDefault();
+
+                finishEditing();
+            }
+
+
+            if (event.key === "Escape") {
+
+                renderTasks();
+            }
+        }
+    );
+
+
+    editInput.addEventListener(
+        "blur",
+        finishEditing
+    );
+}
+
+
+/* =========================================
+   COUNTERS
+========================================= */
+
+function updateCounters() {
+
+    const total = tasks.length;
+
+    const completed = tasks.filter(
+        function (task) {
+            return task.completed;
+        }
+    ).length;
+
+    const pending = total - completed;
+
+
+    totalCount.textContent = total;
+
+    pendingCount.textContent = pending;
+
+    completedCount.textContent = completed;
+}
+
+
+/* =========================================
+   EMPTY STATE
+========================================= */
+
+function updateEmptyState() {
+
+    const title = emptyState.querySelector("h2");
+
+    const description = emptyState.querySelector("p");
+
+
+    if (currentFilter === "pending") {
+
+        title.textContent = "No pending tasks";
+
+        description.textContent =
+            "All your tasks are completed.";
+
+        return;
+    }
+
+
+    if (currentFilter === "completed") {
+
+        title.textContent = "No completed tasks";
+
+        description.textContent =
+            "Complete a task and it will appear here.";
+
+        return;
+    }
+
+
+    title.textContent = "No tasks yet";
+
+    description.textContent =
+        "Add your first task to get started.";
+}
+
+
+/* =========================================
+   INITIAL RENDER
+========================================= */
+
+renderTasks();
+Pasted markdown(2).md
+File
+
+Yes. I checked the full Oasis Infobyte task document you uploaded. The most important thing is: you do NOT have to complete every task in the entire 1,500-line document. The document contains multiple tracks, and you only need to complete the required amount for your assigned track.
+
+Since you are doing Full Stack/Web Development, your relevant section is Web Development & Designing.
+
+🎯 What YOU need to complete
+
+For Web Development & Designing, Oasis gives you 3 levels:
+
+LevelTasksRequired		
+Level 1	3 tasks	Complete all 3
+Level 2	4 tasks	Complete all 4
+Level 3	1 large full-stack project	Complete 1
+
+The rule is choose ONE level and finish every task in that level. You do not need to do Level 1 + Level 2 + Level 3.
+
+Level 1 — 3 tasks
+Landing Page
+HTML5 + CSS3
+Responsive design
+Navbar
+Hero section
+2+ content sections
+Footer
+Proper typography/layout
+Personal Portfolio
+HTML5 + CSS3
+Your name/role
+About Me
+Skills
+2+ projects
+Contact section
+Smooth navigation
+Responsive design
+Temperature Converter
+HTML + CSS + Vanilla JavaScript
+Celsius/Fahrenheit/Kelvin
+Input validation
+Conversion results
+Absolute-zero validation
+Clean UI
+Level 2 — 4 tasks
+Calculator
+Tribute Page
+To-Do Web App
+Login Authentication System
+
+These are more interactive and involve JavaScript. The calculator specifically requires event listeners and says not to use eval().
+
+Level 3 — 1 task
+
+Pizza Delivery Full-Stack Application
+
+This is a very large MERN project involving:
+
+React
+Node.js + Express
+MongoDB
+JWT authentication
+Email verification
+Forgot password
+Pizza customization
+Razorpay test payment
+User dashboard
+Admin dashboard
+Inventory management
+Automatic stock deduction
+Email alerts
+Order management
+Real-time order status
+
+Oasis itself warns that Level 3 requires solid React, Node.js, MongoDB and API knowledge and is not recommended unless you are comfortable with them.
+
+⭐ What I recommend for YOU
+
+Because your goal is Full Stack Developer and you're learning JavaScript/MERN, I would not choose Level 1 just because it's easier.
+
+I recommend:
+
+LEVEL 2
+
+You would build:
+
+Task 1 → Calculator
+↓
+Task 2 → Tribute Page
+↓
+Task 3 → To-Do Web App
+↓
+Task 4 → Login Authentication System
+
+This gives you much better JavaScript practice and is manageable compared with the Level 3 Pizza application.
+
+However, there is one consideration: Level 3 would be much stronger as a portfolio project, but it is a substantially bigger project and has many moving parts. We should only choose it if you can realistically complete and test all the requirements before September 15.
+
+⚠️ There are also requirements AFTER coding
+
+This is very important. Completing the projects alone isn't the whole internship.
+
+For EVERY task, Oasis requires this workflow:
+
+1. Review the task
+
+Understand the complete feature checklist before coding.
+
+2. Build it
+
+Follow the specified technology and requirements.
+
+3. Push it to GitHub
+
+Your repository must be named exactly:
+
+OIBSIP
+
+And the folders must follow:
+
+OIBSIP/[TrackName]-[Level/Task]-[ProjectName]/
+
+For example:
+
+OIBSIP/WebDev-L1-LandingPage/
+
+Each project folder needs your source code, README.md, and relevant screenshots/output files.
+
+4. Make a demo video
+
+The first 2 seconds must display:
+
+Your Full Name + Assigned Track + Task Title
+
+Then demonstrate the project working end-to-end.
+
+5. Post on LinkedIn
+
+Tag Oasis Infobyte and include:
+
+#oasisinfobyte
+
+plus relevant hashtags such as:
+
+#webdevelopment #internship
+
+6. Peer evaluation
+
+You must watch at least two other interns' demo videos and leave meaningful comments. A simple "Great work!" isn't enough. This is explicitly described as a graded requirement.
+
+7. Submit
+
+Submit through the official Task Submission Form and provide your OIBSIP GitHub repository link.
+
+8. Evaluation → Certificate
+
+After submission/evaluation, the document says successful completion results in a Completion Certificate and, where applicable, an Appreciation & Recommendation Letter.
+
+🟢 So our Oasis plan should be
+
+Oasis Infobyte — Web Development
+
+Level 2
+
+Task 1: Calculator
+Task 2: Tribute Page
+Task 3: To-Do Web App
+Task 4: Login Authentication System
+
+And for each one:
+
+Understand requirements → Build → Test → GitHub → README → Demo video → LinkedIn → Peer comments → Submission
+
+We should not copy tutorials or GitHub projects. We'll use tutorials/documentation only to understand concepts and then build your own implementation, because the Oasis instructions explicitly require the work to be your own.
+
+One thing before we start
+
+Don't create the projects yet.
+
+First, let's confirm your assigned track/level from your Oasis offer letter. If the offer letter says Web Development & Designing, then we can officially start with Level 2 → Task 1: Calculator and I'll guide you from creating the folder all the way through GitHub submission.
+
+If you upload the Oasis Offer Letter, I'll check it first so we follow exactly what was assigned to you.
+
+Step 7 — auth.js
+
+Now we implement the actual authentication system.
+
+Open:
+
+C:\OIBSIP\WebDev-L2-LoginAuthentication\auth.js
+
+Replace everything with:
+
+/* =========================================
+   STORAGE KEYS
+========================================= */
+
+
+const USERS_KEY = "loginAuthenticationUsers";
+const SESSION_KEY = "loginAuthenticationSession";
+
+
+
+
+/* =========================================
+   DOM ELEMENTS
+========================================= */
+
+
+const loginForm = document.getElementById("loginForm");
+const registerForm = document.getElementById("registerForm");
+
+
+const loginMessage = document.getElementById("loginMessage");
+const registerMessage = document.getElementById("registerMessage");
+
+
+const dashboardUser = document.getElementById("dashboardUser");
+const accountIdentifier = document.getElementById("accountIdentifier");
+const logoutButton = document.getElementById("logoutButton");
+
+
+
+
+/* =========================================
+   STORAGE HELPERS
+========================================= */
+
+
+function getUsers() {
+
+
+    try {
+
+
+        const savedUsers = localStorage.getItem(USERS_KEY);
+
+
+        return savedUsers
+            ? JSON.parse(savedUsers)
+            : [];
+
+
+    } catch (error) {
+
+
+What we have implemented
+
+Your Task 4 now has the complete authentication flow:
+
+REGISTER
+   ↓
+Validate fields
+   ↓
+Validate password
+   ↓
+Check duplicate account
+   ↓
+SHA-256 hash password
+   ↓
+Store account
+   ↓
+LOGIN
+   ↓
+Find account
+   ↓
+Hash entered password
+   ↓
+Compare hashes
+   ↓
+Create session
+   ↓
+DASHBOARD
+   ↓
+LOGOUT
+   ↓
+Clear session
+   ↓
+LOGIN
+
+This also implements the important requirements from the task document: password validation, duplicate-account handling, generic login errors, protected dashboard access, logout, and avoiding plain-text password storage.
+
+Current project
+WebDev-L2-LoginAuthentication/
+│
+├── index.html        ✅
+├── register.html     ✅
+├── dashboard.html    ✅
+├── style.css         ✅
+├── auth.js           ✅
+└── README.md         ⬜
+
+Don't create the README yet. First we need to test the authentication system carefully.
+
+Test 1 — Registration
+
+Open:
+
+register.html
+
+Create an account such as:
+
+Username: divyasree
+Password: Test1234
+Confirm:  Test1234
+
+It should create the account and redirect you to the login page.
+
+Then tell me what happens, and we'll test login → protected dashboard → logout next.
+
+next
+Step 8 — Test Task 4 completely
+
+The code is written. Now don't change anything yet. We need to verify that every required authentication flow works.
+
+Test 1 — Create an account
+
+Open:
+
+WebDev-L2-LoginAuthentication/register.html
+
+Enter:
+
+Username or Email: divyasree
+Password: Test1234
+Confirm Password: Test1234
+
+Click Create Account.
+
+Expected result
+
+You should see:
+
+Account created successfully. Redirecting to login...
+
+Then it should automatically open:
+
+index.html
+Test 2 — Try duplicate registration
+
+Go back to:
+
+register.html
+
+Enter the same username again:
+
+divyasree
+
+with a valid password.
+
+Expected:
+
+An account with this username or email already exists.
+
+✅ This confirms duplicate-account detection.
+
+Test 3 — Invalid password
+
+Try:
+
+Password: password
+
+Expected:
+
+Password must contain at least 8 characters and 1 number.
+
+Then test:
+
+Password: Test123
+
+This is only 7 characters, so it should also be rejected.
+
+Test 4 — Password mismatch
+
+Use:
+
+Password: Test1234
+Confirm Password: Test1235
+
+Expected:
+
+Passwords do not match.
+
+Test 5 — Login
+
+Go to:
+
+index.html
+
+Enter:
+
+Username or Email: divyasree
+Password: Test1234
+
+Click Sign In.
+
+Expected:
+
+dashboard.html
+
+and you should see:
+
+Welcome, divyasree
+
+with:
+
+Account: divyasree
+Session: Active
+Test 6 — Wrong password
+
+Log out first.
+
+Then try:
+
+Username: divyasree
+Password: Wrong123
+
+Expected:
+
+Incorrect username/email or password.
+
+Notice that it doesn't reveal whether the username exists.
+
+Test 7 — Protected dashboard
+
+This is very important.
+
+First click Logout.
+
+Then manually open:
+
+dashboard.html
+
+Expected:
+
+dashboard.html
+       ↓
+No active session
+       ↓
+index.html
+
+You should automatically be redirected to the login page.
+
+Test 8 — Logout
+
+Login again.
+
+On the dashboard click:
+
+Logout
+
+Expected:
+
+Dashboard
+   ↓
+Logout
+   ↓
+Session removed
+   ↓
+Login page
+
+Then try opening dashboard.html again.
+
+It should again redirect to login.
+
+Final Task 4 checklist
+Requirement	Test
+Registration	⬜
+Password ≥ 8 characters	⬜
+Password contains number	⬜
+Duplicate account detection	⬜
+Password confirmation	⬜
+Login	⬜
+Wrong credentials error	⬜
+Protected dashboard	⬜
+Logout	⬜
+Session persistence	⬜
+Password hashing	✅ Implemented
+Responsive UI	✅ Implemented
+One important note
+
+This is a frontend-only educational authentication implementation using localStorage and SHA-256, which is the Approach A allowed in your Oasis task. It should not be presented as production-grade authentication because real applications should handle credentials and sessions server-side.
+
+Do the tests above now. If everything passes, the next step is README.md + final project cleanup + connecting Task 4 to your root OIBSIP/index.html.
+
+Pasted code.html
+File
+update this and give me 
+
+Yes. I updated your root index.html based on the file you provided.
+
+Changes made
+✅ Task 1 — Calculator: Completed + project link
+✅ Task 2 — Tribute Page: Completed + project link
+✅ Task 3 — To-Do App: Changed from In Development → Completed
+✅ Task 3 now has View Project → link
+✅ Task 4 — Login Authentication: Changed from In Development → Completed
+✅ Task 4 now has View Project → link
+✅ Task 4 technologies updated to:
+HTML5
+CSS3
+JavaScript
+SHA-256
+Local Storage
+✅ Featured Projects description updated
+Download the updated root file
+
+Download updated index.html
+
+Replace your existing:
+
+C:\OIBSIP\index.html
+
+with this file.
+
+Your final root structure should now be:
+
+OIBSIP/
+│
+├── index.html
+│
+├── WebDev-L2-Calculator/
+│
+├── WebDev-L2-TributePage/
+│
+├── WebDev-L2-ToDoApp/
+│
+└── WebDev-L2-LoginAuthentication/
+
+Important: Before GitHub submission, we should test every View Project → link from the root page to make sure all four open correctly. 
+
+OIBSIP-index-updated.html
+HTML
+
+Library
+/
+OIBSIP-index-updated.html
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta
+        name="description"
+        content="Divyasree Manpoor — Web Development Project Portfolio"
+    >
+
+    <title>Divyasree Manpoor | Web Development Projects</title>
+
+    <style>
+        /* =========================================
+           RESET
+        ========================================= */
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family:
+                Inter,
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                Roboto,
+                Arial,
+                sans-serif;
+
+            color: #172033;
+            background: #f8fafc;
+
+            line-height: 1.6;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+
+        /* =========================================
+           VARIABLES
+        ========================================= */
+
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+
+            --heading: #0f172a;
+            --text: #334155;
+            --muted: #64748b;
+
+            --background: #f8fafc;
+            --surface: #ffffff;
+
+            --border: #e2e8f0;
+
+            --success: #15803d;
+            --success-bg: #dcfce7;
+
+            --progress: #92400e;
+            --progress-bg: #fef3c7;
+        }
+
+
+        /* =========================================
+           NAVIGATION
+        ========================================= */
+
+        .navbar {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+
+            border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+
+            background: rgba(255, 255, 255, 0.94);
+
+            backdrop-filter: blur(14px);
+        }
+
+        .nav-container {
+            width: min(1120px, calc(100% - 40px));
+
+            min-height: 72px;
+
+            margin: auto;
+
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand {
+            color: var(--heading);
+
+            font-size: 15px;
+            font-weight: 700;
+
+            letter-spacing: 0.5px;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+
+            gap: 30px;
+
+            color: var(--muted);
+
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .nav-links a {
+            transition: color 0.2s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+
+        .github-link {
+            padding: 8px 14px;
+
+            border: 1px solid var(--border);
+            border-radius: 7px;
+
+            background: #ffffff;
+
+            color: var(--heading);
+
+            transition:
+                border-color 0.2s ease,
+                color 0.2s ease;
+        }
+
+        .github-link:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+
+        /* =========================================
+           HERO
+        ========================================= */
+
+        .hero {
+            border-bottom: 1px solid var(--border);
+
+            background: #ffffff;
+        }
+
+        .hero-container {
+            width: min(1120px, calc(100% - 40px));
+
+            margin: auto;
+
+            padding: 120px 0 115px;
+        }
+
+        .hero-content {
+            max-width: 820px;
+        }
+
+        .hero-label {
+            display: inline-block;
+
+            margin-bottom: 22px;
+
+            color: var(--primary);
+
+            font-size: 12px;
+            font-weight: 800;
+
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .hero h1 {
+            margin-bottom: 24px;
+
+            color: var(--heading);
+
+            font-size: clamp(44px, 7vw, 72px);
+
+            line-height: 1.05;
+
+            letter-spacing: -3px;
+        }
+
+        .hero h1 span {
+            color: var(--primary);
+        }
+
+        .hero-description {
+            max-width: 700px;
+
+            margin-bottom: 34px;
+
+            color: var(--muted);
+
+            font-size: 18px;
+
+            line-height: 1.8;
+        }
+
+        .hero-actions {
+            display: flex;
+            flex-wrap: wrap;
+
+            gap: 12px;
+        }
+
+        .button {
+            display: inline-flex;
+
+            align-items: center;
+            justify-content: center;
+
+            min-height: 46px;
+
+            padding: 0 20px;
+
+            border-radius: 8px;
+
+            font-size: 14px;
+            font-weight: 600;
+
+            transition:
+                background 0.2s ease,
+                color 0.2s ease,
+                border-color 0.2s ease,
+                transform 0.2s ease;
+        }
+
+        .button-primary {
+            background: var(--primary);
+            color: #ffffff;
+        }
+
+        .button-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .button-secondary {
+            border: 1px solid var(--border);
+
+            background: #ffffff;
+
+            color: var(--heading);
+        }
+
+        .button-secondary:hover {
+            border-color: #94a3b8;
+            transform: translateY(-2px);
+        }
+
+
+        /* =========================================
+           PROJECT SECTION
+        ========================================= */
+
+        .projects-section {
+            width: min(1120px, calc(100% - 40px));
+
+            margin: auto;
+
+            padding: 100px 0;
+        }
+
+        .section-header {
+            margin-bottom: 45px;
+        }
+
+        .section-label {
+            margin-bottom: 8px;
+
+            color: var(--primary);
+
+            font-size: 12px;
+            font-weight: 800;
+
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .section-header h2 {
+            margin-bottom: 10px;
+
+            color: var(--heading);
+
+            font-size: clamp(30px, 4vw, 42px);
+
+            line-height: 1.2;
+
+            letter-spacing: -1.2px;
+        }
+
+        .section-description {
+            max-width: 650px;
+
+            color: var(--muted);
+
+            font-size: 15px;
+        }
+
+
+        /* =========================================
+           PROJECT GRID
+        ========================================= */
+
+        .project-grid {
+            display: grid;
+
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
+
+            gap: 22px;
+        }
+
+
+        /* =========================================
+           PROJECT CARD
+        ========================================= */
+
+        .project-card {
+            display: flex;
+            flex-direction: column;
+
+            min-height: 365px;
+
+            padding: 30px;
+
+            border: 1px solid var(--border);
+            border-radius: 14px;
+
+            background: var(--surface);
+
+            transition:
+                transform 0.25s ease,
+                box-shadow 0.25s ease,
+                border-color 0.25s ease;
+        }
+
+        .project-card:hover {
+            transform: translateY(-5px);
+
+            border-color: #cbd5e1;
+
+            box-shadow:
+                0 18px 40px rgba(15, 23, 42, 0.08);
+        }
+
+        .project-top {
+            display: flex;
+
+            align-items: center;
+            justify-content: space-between;
+
+            margin-bottom: 25px;
+        }
+
+        .project-number {
+            color: #94a3b8;
+
+            font-size: 12px;
+            font-weight: 800;
+
+            letter-spacing: 1px;
+        }
+
+        .project-status {
+            padding: 5px 9px;
+
+            border-radius: 999px;
+
+            font-size: 10px;
+            font-weight: 800;
+
+            letter-spacing: 0.5px;
+
+            text-transform: uppercase;
+        }
+
+        .completed {
+            background: var(--success-bg);
+            color: var(--success);
+        }
+
+        .in-progress {
+            background: var(--progress-bg);
+            color: var(--progress);
+        }
+
+        .project-card h3 {
+            margin-bottom: 12px;
+
+            color: var(--heading);
+
+            font-size: 24px;
+
+            letter-spacing: -0.5px;
+        }
+
+        .project-description {
+            margin-bottom: 25px;
+
+            color: var(--muted);
+
+            font-size: 14px;
+
+            line-height: 1.75;
+        }
+
+
+        /* =========================================
+           TECHNOLOGIES
+        ========================================= */
+
+        .technologies {
+            display: flex;
+            flex-wrap: wrap;
+
+            gap: 7px;
+
+            margin-bottom: 28px;
+        }
+
+        .technology {
+            padding: 5px 9px;
+
+            border: 1px solid var(--border);
+            border-radius: 6px;
+
+            background: #f8fafc;
+
+            color: #475569;
+
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+
+        /* =========================================
+           PROJECT FOOTER
+        ========================================= */
+
+        .project-footer {
+            display: flex;
+            align-items: center;
+
+            margin-top: auto;
+
+            padding-top: 20px;
+
+            border-top: 1px solid #eef2f7;
+        }
+
+        .project-link {
+            color: var(--primary);
+
+            font-size: 14px;
+            font-weight: 700;
+
+            transition: color 0.2s ease;
+        }
+
+        .project-link:hover {
+            color: var(--primary-dark);
+        }
+
+        .coming-soon {
+            color: var(--muted);
+
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+
+        /* =========================================
+           ABOUT SECTION
+        ========================================= */
+
+        .about-section {
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+
+            background: #ffffff;
+        }
+
+        .about-container {
+            width: min(1120px, calc(100% - 40px));
+
+            margin: auto;
+
+            padding: 90px 0;
+
+            display: grid;
+
+            grid-template-columns: 1fr 1fr;
+
+            gap: 70px;
+        }
+
+        .about-content h2 {
+            margin-bottom: 18px;
+
+            color: var(--heading);
+
+            font-size: 30px;
+
+            letter-spacing: -0.8px;
+        }
+
+        .about-content p {
+            color: var(--muted);
+
+            font-size: 15px;
+
+            line-height: 1.8;
+        }
+
+        .principles {
+            display: grid;
+
+            grid-template-columns: repeat(2, 1fr);
+
+            gap: 12px;
+        }
+
+        .principle {
+            padding: 20px;
+
+            border: 1px solid var(--border);
+            border-radius: 10px;
+
+            background: #f8fafc;
+        }
+
+        .principle h3 {
+            margin-bottom: 5px;
+
+            color: var(--heading);
+
+            font-size: 14px;
+        }
+
+        .principle p {
+            color: var(--muted);
+
+            font-size: 12px;
+
+            line-height: 1.6;
+        }
+
+
+        /* =========================================
+           FOOTER
+        ========================================= */
+
+        footer {
+            background: #0f172a;
+            color: #94a3b8;
+        }
+
+        .footer-container {
+            width: min(1120px, calc(100% - 40px));
+
+            min-height: 85px;
+
+            margin: auto;
+
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            gap: 20px;
+        }
+
+        .footer-name {
+            color: #ffffff;
+
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .footer-text {
+            font-size: 12px;
+        }
+
+
+        /* =========================================
+           RESPONSIVE
+        ========================================= */
+
+        @media (max-width: 800px) {
+
+            .nav-links {
+                gap: 15px;
+            }
+
+            .hero-container {
+                padding: 90px 0;
+            }
+
+            .project-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .about-container {
+                grid-template-columns: 1fr;
+
+                gap: 45px;
+            }
+        }
+
+
+        @media (max-width: 600px) {
+
+            .nav-container,
+            .hero-container,
+            .projects-section,
+            .about-container,
+            .footer-container {
+                width: min(100% - 30px, 1120px);
+            }
+
+            .nav-container {
+                min-height: 64px;
+            }
+
+            .brand {
+                font-size: 13px;
+            }
+
+            .nav-links a:not(.github-link) {
+                display: none;
+            }
+
+            .hero-container {
+                padding: 75px 0 80px;
+            }
+
+            .hero h1 {
+                font-size: 43px;
+
+                letter-spacing: -2px;
+            }
+
+            .hero-description {
+                font-size: 16px;
+            }
+
+            .projects-section {
+                padding: 70px 0;
+            }
+
+            .project-card {
+                min-height: auto;
+
+                padding: 24px;
+            }
+
+            .about-container {
+                padding: 70px 0;
+            }
+
+            .principles {
+                grid-template-columns: 1fr;
+            }
+
+            .footer-container {
+                min-height: auto;
+
+                padding: 25px 0;
+
+                align-items: flex-start;
+
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+
+<body>
+
+
+    <!-- =========================================
+         NAVIGATION
+    ========================================== -->
+
+    <nav class="navbar">
+
+        <div class="nav-container">
+
+            <a href="#" class="brand">
+                DIVYASREE MANPOOR
+            </a>
+
+            <div class="nav-links">
+
+                <a href="#projects">
+                    Projects
+                </a>
+
+                <a href="#about">
+                    About
+                </a>
+
+                <a
+                    href="https://github.com/Divyasree-Manpoor/OIBSIP"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="github-link"
+                >
+                    GitHub
+                </a>
+
+            </div>
+
+        </div>
+
+    </nav>
+
+
+    <!-- =========================================
+         HERO
+    ========================================== -->
+
+    <header class="hero">
+
+        <div class="hero-container">
+
+            <div class="hero-content">
+
+                <div class="hero-label">
+                    WEB DEVELOPMENT
+                </div>
+
+                <h1>
+                    Building thoughtful
+                    <span>digital experiences.</span>
+                </h1>
+
+                <p class="hero-description">
+                    A collection of responsive web applications built
+                    with a focus on clean interfaces, practical
+                    functionality, and maintainable frontend development.
+                </p>
+
+                <div class="hero-actions">
+
+                    <a
+                        href="#projects"
+                        class="button button-primary"
+                    >
+                        Explore Projects
+                    </a>
+
+                    <a
+                        href="https://github.com/Divyasree-Manpoor/OIBSIP"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="button button-secondary"
+                    >
+                        View GitHub
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </header>
+
+
+    <!-- =========================================
+         PROJECTS
+    ========================================== -->
+
+    <main>
+
+        <section
+            id="projects"
+            class="projects-section"
+        >
+
+            <div class="section-header">
+
+                <div class="section-label">
+                    SELECTED WORK
+                </div>
+
+                <h2>
+                    Featured Projects
+                </h2>
+
+                <p class="section-description">
+                    Four practical web applications demonstrating responsive design,
+                    interactive functionality, and core JavaScript development.
+                </p>
+
+            </div>
+
+
+            <div class="project-grid">
+
+
+                <!-- =================================
+                     PROJECT 01 — CALCULATOR
+                ================================== -->
+
+                <article class="project-card">
+
+                    <div class="project-top">
+
+                        <span class="project-number">
+                            01
+                        </span>
+
+                        <span
+                            class="project-status completed"
+                        >
+                            Completed
+                        </span>
+
+                    </div>
+
+
+                    <h3>
+                        Interactive Calculator
+                    </h3>
+
+
+                    <p class="project-description">
+                        A responsive calculator with arithmetic
+                        operations, decimal handling, operator chaining,
+                        keyboard support, and input validation.
+                    </p>
+
+
+                    <div class="technologies">
+
+                        <span class="technology">
+                            HTML5
+                        </span>
+
+                        <span class="technology">
+                            CSS3
+                        </span>
+
+                        <span class="technology">
+                            JavaScript
+                        </span>
+
+                        <span class="technology">
+                            CSS Grid
+                        </span>
+
+                    </div>
+
+
+                    <div class="project-footer">
+
+                        <a
+                            href="./WebDev-L2-Calculator/index.html"
+                            class="project-link"
+                        >
+                            View Project →
+                        </a>
+
+                    </div>
+
+                </article>
+
+
+                <!-- =================================
+                     PROJECT 02 — TRIBUTE
+                ================================== -->
+
+                <article class="project-card">
+
+                    <div class="project-top">
+
+                        <span class="project-number">
+                            02
+                        </span>
+
+                        <span
+                            class="project-status completed"
+                        >
+                            Completed
+                        </span>
+
+                    </div>
+
+
+                    <h3>
+                        Tribute & Biography Experience
+                    </h3>
+
+
+                    <p class="project-description">
+                        A responsive editorial-style webpage presenting
+                        the life, achievements, and lasting legacy of
+                        Dr. A. P. J. Abdul Kalam through structured
+                        content and visual design.
+                    </p>
+
+
+                    <div class="technologies">
+
+                        <span class="technology">
+                            HTML5
+                        </span>
+
+                        <span class="technology">
+                            CSS3
+                        </span>
+
+                        <span class="technology">
+                            Responsive Design
+                        </span>
+
+                        <span class="technology">
+                            Google Fonts
+                        </span>
+
+                    </div>
+
+
+                    <div class="project-footer">
+
+                        <a
+                            href="./WebDev-L2-TributePage/index.html"
+                            class="project-link"
+                        >
+                            View Project →
+                        </a>
+
+                    </div>
+
+                </article>
+
+
+                <!-- =================================
+                     PROJECT 03 — TODO
+                ================================== -->
+
+                <article class="project-card">
+
+                    <div class="project-top">
+
+                        <span class="project-number">
+                            03
+                        </span>
+
+                        <span
+                            class="project-status completed"
+                        >
+                            Completed
+                        </span>
+
+                    </div>
+
+
+                    <h3>
+                        Task Management Application
+                    </h3>
+
+
+                    <p class="project-description">
+                        An interactive application for creating,
+                        organizing, editing, completing, and managing
+                        everyday tasks.
+                    </p>
+
+
+                    <div class="technologies">
+
+                        <span class="technology">
+                            HTML5
+                        </span>
+
+                        <span class="technology">
+                            CSS3
+                        </span>
+
+                        <span class="technology">
+                            JavaScript
+                        </span>
+
+                        <span class="technology">
+                            Local Storage
+                        </span>
+
+                    </div>
+
+
+                    <div class="project-footer">
+
+                        <a
+                            href="./WebDev-L2-ToDoApp/index.html"
+                            class="project-link"
+                        >
+                            View Project →
+                        </a>
+
+                    </div>
+
+                </article>
+
+
+                <!-- =================================
+                     PROJECT 04 — AUTHENTICATION
+                ================================== -->
+
+                <article class="project-card">
+
+                    <div class="project-top">
+
+                        <span class="project-number">
+                            04
+                        </span>
+
+                        <span
+                            class="project-status completed"
+                        >
+                            Completed
+                        </span>
+
+                    </div>
+
+
+                    <h3>
+                        Authentication System
+                    </h3>
+
+
+                    <p class="project-description">
+                        A web application demonstrating user
+                        registration, login validation, protected
+                        access, and authentication workflows.
+                    </p>
+
+
+                    <div class="technologies">
+
+                        <span class="technology">
+                            HTML5
+                        </span>
+
+                        <span class="technology">
+                            CSS3
+                        </span>
+
+                        <span class="technology">
+                            JavaScript
+                        </span>
+
+                        <span class="technology">
+                            SHA-256
+                        </span>
+
+                        <span class="technology">
+                            Local Storage
+                        </span>
+
+                    </div>
+
+
+                    <div class="project-footer">
+
+                        <a
+                            href="./WebDev-L2-LoginAuthentication/index.html"
+                            class="project-link"
+                        >
+                            View Project →
+                        </a>
+
+                    </div>
+
+                </article>
+
+
+            </div>
+
+        </section>
+
+
+        <!-- =========================================
+             ABOUT
+        ========================================== -->
+
+        <section
+            id="about"
+            class="about-section"
+        >
+
+            <div class="about-container">
+
+
+                <div class="about-content">
+
+                    <h2>
+                        Development Approach
+                    </h2>
+
+                    <p>
+                        These projects represent hands-on development
+                        work focused on strengthening core web technologies
+                        and translating requirements into functional,
+                        responsive user experiences.
+                    </p>
+
+                </div>
+
+
+                <div class="principles">
+
+
+                    <div class="principle">
+
+                        <h3>
+                            Responsive
+                        </h3>
+
+                        <p>
+                            Designed for desktop, tablet, and mobile
+                            environments.
+                        </p>
+
+                    </div>
+
+
+                    <div class="principle">
+
+                        <h3>
+                            Functional
+                        </h3>
+
+                        <p>
+                            Focused on meaningful interaction rather
+                            than static layouts.
+                        </p>
+
+                    </div>
+
+
+                    <div class="principle">
+
+                        <h3>
+                            Structured
+                        </h3>
+
+                        <p>
+                            Organized with clear and maintainable
+                            project structure.
+                        </p>
+
+                    </div>
+
+
+                    <div class="principle">
+
+                        <h3>
+                            Continuous
+                        </h3>
+
+                        <p>
+                            Built, tested, refined, and documented
+                            throughout development.
+                        </p>
+
+                    </div>
+
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- =========================================
+         FOOTER
+    ========================================== -->
+
+    <footer>
+
+        <div class="footer-container">
+
+            <div class="footer-name">
+                Divyasree Manpoor
+            </div>
+
+            <div class="footer-text">
+                Web Development · 2026
+            </div>
+
+        </div>
+
+    </footer>
+
+
+</body>
+
+</html>

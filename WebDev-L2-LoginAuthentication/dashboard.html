@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta
+        name="description"
+        content="Protected user dashboard."
+    >
+
+    <title>Dashboard</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <main class="dashboard-container">
+
+        <section class="dashboard-card">
+
+            <!-- Header -->
+
+            <header class="dashboard-header">
+
+                <div>
+
+                    <p class="eyebrow">
+                        ACCOUNT DASHBOARD
+                    </p>
+
+                    <h1>
+                        Welcome,
+                        <span id="dashboardUser">
+                            User
+                        </span>
+                    </h1>
+
+                    <p class="dashboard-subtitle">
+                        You have successfully signed in to your account.
+                    </p>
+
+                </div>
+
+
+                <button
+                    type="button"
+                    id="logoutButton"
+                    class="logout-button"
+                >
+                    Logout
+                </button>
+
+            </header>
+
+
+            <!-- Account Information -->
+
+            <section class="dashboard-content">
+
+                <div class="dashboard-section">
+
+                    <div class="section-icon">
+                        ✓
+                    </div>
+
+                    <div>
+
+                        <h2>
+                            Authentication Successful
+                        </h2>
+
+                        <p>
+                            Your account has been verified and you
+                            currently have an active session.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="account-details">
+
+                    <div class="detail-item">
+
+                        <span>
+                            Account
+                        </span>
+
+                        <strong id="accountIdentifier">
+                            —
+                        </strong>
+
+                    </div>
+
+
+                    <div class="detail-item">
+
+                        <span>
+                            Session
+                        </span>
+
+                        <strong class="session-active">
+                            Active
+                        </strong>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- Security Notice -->
+
+            <aside class="security-notice">
+
+                <strong>
+                    Protected Area
+                </strong>
+
+                <p>
+                    This page requires an authenticated session.
+                    Logging out will end your current session and
+                    return you to the login page.
+                </p>
+
+            </aside>
+
+        </section>
+
+    </main>
+
+
+    <script src="auth.js"></script>
+
+</body>
+
+</html>
