@@ -1,0 +1,211 @@
+/* ================================
+   Global Styles
+================================ */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    min-height: 100vh;
+    font-family: Arial, sans-serif;
+    background: #eef2f7;
+}
+
+
+/* ================================
+   Main Container
+================================ */
+
+.calculator-container {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+
+/* ================================
+   Calculator
+================================ */
+
+.calculator {
+    width: 100%;
+    max-width: 380px;
+    padding: 24px;
+    border-radius: 20px;
+    background: #ffffff;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.12);
+}
+
+
+/* ================================
+   Header
+================================ */
+
+.calculator-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.calculator-header h1 {
+    font-size: 28px;
+    margin-bottom: 6px;
+}
+
+.calculator-header p {
+    font-size: 14px;
+    color: #6b7280;
+}
+
+
+/* ================================
+   Display
+================================ */
+
+.display-container {
+    min-height: 110px;
+    padding: 18px;
+    margin-bottom: 20px;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: flex-end;
+
+    border-radius: 14px;
+    background: #f3f4f6;
+
+    overflow: hidden;
+}
+
+.previous-display {
+    min-height: 24px;
+    width: 100%;
+
+    text-align: right;
+
+    font-size: 16px;
+    color: #6b7280;
+
+    overflow-wrap: anywhere;
+}
+
+.current-display {
+    width: 100%;
+
+    text-align: right;
+
+    font-size: 36px;
+    font-weight: bold;
+
+    color: #111827;
+
+    overflow-wrap: anywhere;
+}
+
+
+/* ================================
+   Buttons
+================================ */
+
+/*
+   CSS Grid is required by the
+   Oasis Infobyte task.
+*/
+
+.calculator-buttons {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+}
+
+.button {
+    min-height: 65px;
+
+    border: none;
+    border-radius: 12px;
+
+    background: #e5e7eb;
+    color: #111827;
+
+    font-size: 20px;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition:
+        transform 0.15s ease,
+        background 0.15s ease;
+}
+
+.button:hover {
+    background: #d1d5db;
+}
+
+.button:active {
+    transform: scale(0.95);
+}
+
+
+/* ================================
+   Special Buttons
+================================ */
+
+.button-clear {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.button-delete {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.button-operator {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.button-equals {
+    grid-row: span 2;
+
+    background: #2563eb;
+    color: #ffffff;
+}
+
+.button-equals:hover {
+    background: #1d4ed8;
+}
+
+.button-zero {
+    grid-column: span 2;
+}
+
+
+/* ================================
+   Responsive Design
+================================ */
+
+@media (max-width: 480px) {
+
+    .calculator {
+        padding: 18px;
+    }
+
+    .calculator-header h1 {
+        font-size: 24px;
+    }
+
+    .button {
+        min-height: 58px;
+        font-size: 18px;
+    }
+
+    .current-display {
+        font-size: 30px;
+    }
+}
